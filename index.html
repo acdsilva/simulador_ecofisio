@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoFisio Simulador</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bio: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #16a34a;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #16a34a;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+    <header class="bg-bio-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-leaf text-bio-500 text-2xl"></i>
+                <h1 class="font-bold text-xl tracking-wide" data-i18n="app_title">EcoFisio Simulador</h1>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <select id="languageSelect" class="bg-bio-700 text-white border-none rounded-lg py-1 pl-3 pr-8 focus:ring-2 focus:ring-bio-500 appearance-none cursor-pointer">
+                        <option value="pt">Português</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-xs pointer-events-none"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Controls & Image -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- Species Selector -->
+            <div class="glass-panel rounded-2xl p-5 shadow-sm">
+                <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-paw text-bio-600"></i> <span data-i18n="select_species">Selecionar Espécie</span>
+                </h2>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1" data-i18n="biome">Bioma</label>
+                        <select id="biomeSelect" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-bio-500">
+                            <option value="pampas" data-i18n="biome_pampas">Pampas</option>
+                            <option value="amazon" data-i18n="biome_amazon">Amazônia</option>
+                            <option value="atlantic" data-i18n="biome_atlantic">Mata Atlântica</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1" data-i18n="species">Espécie</label>
+                        <select id="speciesSelect" class="w-full bg-gray-50 border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-bio-500">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Species Profile & AI Image -->
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                <div class="relative w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden" id="imageContainer">
+                    <img id="speciesImage" src="" alt="Species" class="w-full h-full object-cover hidden">
+                    <div id="imagePlaceholder" class="text-gray-400 flex flex-col items-center p-4 text-center">
+                        <i class="fa-solid fa-camera text-3xl mb-2"></i>
+                        <p class="text-sm" data-i18n="image_placeholder">Nenhuma imagem gerada</p>
+                    </div>
+                    <div id="imageLoader" class="absolute inset-0 bg-white/80 flex flex-col items-center justify-center hidden z-10">
+                        <div class="loader mb-2"></div>
+                        <span class="text-sm font-medium text-bio-700" data-i18n="generating_image">Gerando IA...</span>
+                    </div>
+                </div>
+                <div class="p-4 bg-white">
+                    <h3 id="speciesNameDisplay" class="font-bold text-gray-800">Nome da Espécie</h3>
+                    <p id="speciesScientificDisplay" class="text-sm text-gray-500 italic mb-3">Nome Científico</p>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <span id="thermoBadge" class="text-xs font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">Endotérmico</span>
+                    </div>
+
+                    <button id="btnGenerateImage" class="w-full bg-gradient-to-r from-bio-600 to-bio-500 hover:from-bio-700 hover:to-bio-600 text-white font-medium py-2 px-4 rounded-lg transition-all shadow flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span data-i18n="btn_generate_image">Gerar Imagem IA</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Environmental Controls -->
+            <div class="glass-panel rounded-2xl p-5 shadow-sm">
+                <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-earth-americas text-blue-500"></i> <span data-i18n="env_controls">Ambiente</span>
+                </h2>
+                
+                <div class="space-y-5">
+                    <!-- Temp -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-gray-700" data-i18n="temperature">Temperatura</span>
+                            <span id="valTemp" class="font-bold text-red-500">25°C</span>
+                        </div>
+                        <input type="range" id="sliderTemp" min="0" max="50" value="25" class="w-full">
+                    </div>
+                    <!-- Water -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-gray-700" data-i18n="water">Água</span>
+                            <span id="valWater" class="font-bold text-blue-500">100%</span>
+                        </div>
+                        <input type="range" id="sliderWater" min="0" max="100" value="100" class="w-full">
+                    </div>
+                    <!-- Food -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-gray-700" data-i18n="food">Alimento</span>
+                            <span id="valFood" class="font-bold text-green-600">100%</span>
+                        </div>
+                        <input type="range" id="sliderFood" min="0" max="100" value="100" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Stats & Charts & AI -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Real-time Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-center items-center text-center shadow-sm border-t-4 border-t-red-400">
+                    <i class="fa-solid fa-temperature-half text-red-400 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold" data-i18n="body_temp">Temp. Corporal</span>
+                    <span id="statBodyTemp" class="text-2xl font-bold text-gray-800 mt-1">37.0°C</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-center items-center text-center shadow-sm border-t-4 border-t-orange-400">
+                    <i class="fa-solid fa-bolt text-orange-400 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold" data-i18n="metabolism">Metabolismo</span>
+                    <span id="statMetabolism" class="text-2xl font-bold text-gray-800 mt-1">100%</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-center items-center text-center shadow-sm border-t-4 border-t-purple-500">
+                    <i class="fa-solid fa-heart-pulse text-purple-500 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold" data-i18n="stress">Nível de Estresse</span>
+                    <span id="statStress" class="text-2xl font-bold text-gray-800 mt-1">0%</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-center items-center text-center shadow-sm border-t-4 border-t-green-500">
+                    <i class="fa-solid fa-shield-cat text-green-500 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold" data-i18n="survival">Sobrevivência</span>
+                    <span id="statSurvival" class="text-2xl font-bold text-gray-800 mt-1">100%</span>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass-panel rounded-2xl p-5 shadow-sm flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-bio-600"></i> <span data-i18n="timeline_title">Evolução por Gerações</span>
+                    </h2>
+                    <div class="flex gap-2">
+                        <button id="btnReset" class="text-gray-500 hover:text-red-500 px-3 py-1 rounded transition-colors" title="Resetar">
+                            <i class="fa-solid fa-arrow-rotate-right"></i>
+                        </button>
+                        <button id="btnAdvanceGen" class="bg-bio-100 hover:bg-bio-200 text-bio-700 font-medium py-1 px-4 rounded-lg transition-colors flex items-center gap-2">
+                            <span data-i18n="btn_next_gen">Avançar Geração</span> <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="relative w-full flex-grow" style="min-height: 250px;">
+                    <canvas id="simulationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Tutor Section -->
+            <div class="glass-panel rounded-2xl p-5 shadow-sm border border-bio-200 bg-gradient-to-br from-white to-bio-50">
+                <h2 class="font-semibold text-lg mb-3 flex items-center gap-2 text-bio-800">
+                    <i class="fa-solid fa-robot"></i> <span data-i18n="ai_tutor">Tutor IA (Gemini)</span>
+                </h2>
+                
+                <div id="aiResponseArea" class="bg-white rounded-xl p-4 text-gray-700 text-sm leading-relaxed min-h-[100px] border border-gray-100 mb-3 shadow-inner">
+                    <span class="text-gray-400 italic" data-i18n="ai_prompt_hint">Ajuste os parâmetros ou avance gerações e peça para a IA explicar a fisiologia desta espécie nas condições atuais.</span>
+                </div>
+
+                <button id="btnAskAI" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-all shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-comment-dots"></i>
+                    <span data-i18n="btn_ask_ai">Explicar Cenário Atual</span>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 1. DATA DEFINITIONS ---
+
+        const SPECIES_DB = {
+            // PAMPAS
+            'capivara': { id: 'capivara', biome: 'pampas', type: 'endotherm', optTemp: 24, maxTempTolerance: 15, namePT: 'Capivara', nameEN: 'Capybara', nameES: 'Carpincho', scientific: 'Hydrochoerus hydrochaeris', imagePrompt: 'A close up nature documentary high quality photo of a capybara in the grassy plains near water, beautiful lighting, national geographic style' },
+            'quero-quero': { id: 'quero-quero', biome: 'pampas', type: 'endotherm', optTemp: 22, maxTempTolerance: 18, namePT: 'Quero-quero', nameEN: 'Southern Lapwing', nameES: 'Tero', scientific: 'Vanellus chilensis', imagePrompt: 'A high quality wildlife photo of a Southern Lapwing bird in grassy plains, national geographic style' },
+            'prea': { id: 'prea', biome: 'pampas', type: 'endotherm', optTemp: 20, maxTempTolerance: 12, namePT: 'Preá', nameEN: 'Brazilian Guinea Pig', nameES: 'Cuis', scientific: 'Cavia aperea', imagePrompt: 'A high quality wildlife photo of a Brazilian Guinea Pig in tall grass, national geographic style' },
+            'teiu': { id: 'teiu', biome: 'pampas', type: 'ectotherm', optTemp: 32, maxTempTolerance: 20, namePT: 'Teiú', nameEN: 'Argentine Tegu', nameES: 'Lagarto Overo', scientific: 'Salvator merianae', imagePrompt: 'A highly detailed macro photo of an Argentine Tegu lizard basking in the sun, natural environment, national geographic style' },
+            
+            // AMAZON
+            'onca-pintada': { id: 'onca-pintada', biome: 'amazon', type: 'endotherm', optTemp: 28, maxTempTolerance: 12, namePT: 'Onça-pintada', nameEN: 'Jaguar', nameES: 'Jaguar', scientific: 'Panthera onca', imagePrompt: 'A majestic jaguar walking through the dense amazon rainforest, dappled sunlight, highly detailed wildlife photography' },
+            'arara-azul': { id: 'arara-azul', biome: 'amazon', type: 'endotherm', optTemp: 26, maxTempTolerance: 14, namePT: 'Arara-azul', nameEN: 'Hyacinth Macaw', nameES: 'Guacamayo Azul', scientific: 'Anodorhynchus hyacinthinus', imagePrompt: 'A vibrant Hyacinth Macaw perched on a branch in the Amazon rainforest canopy, highly detailed, stunning colors' },
+            'boto': { id: 'boto', biome: 'amazon', type: 'endotherm', optTemp: 28, maxTempTolerance: 10, namePT: 'Boto-cor-de-rosa', nameEN: 'Pink River Dolphin', nameES: 'Delfín Rosado', scientific: 'Inia geoffrensis', imagePrompt: 'A pink river dolphin swimming in the dark waters of the Amazon river, natural light, documentary style photography' },
+            
+            // ATLANTIC FOREST
+            'mico': { id: 'mico', biome: 'atlantic', type: 'endotherm', optTemp: 23, maxTempTolerance: 12, namePT: 'Mico-leão-dourado', nameEN: 'Golden Lion Tamarin', nameES: 'Tamarino León Dorado', scientific: 'Leontopithecus rosalia', imagePrompt: 'A Golden Lion Tamarin sitting on a mossy branch in the Atlantic Forest, golden fur glowing in the sunlight, macro photography' },
+            'anta': { id: 'anta', biome: 'atlantic', type: 'endotherm', optTemp: 22, maxTempTolerance: 15, namePT: 'Anta', nameEN: 'Tapir', nameES: 'Tapir', scientific: 'Tapirus terrestris', imagePrompt: 'A South American tapir foraging in the dense Atlantic Forest, highly detailed wildlife photography' },
+            'muriqui': { id: 'muriqui', biome: 'atlantic', type: 'endotherm', optTemp: 20, maxTempTolerance: 10, namePT: 'Muriqui', nameEN: 'Muriqui', nameES: 'Muriqui', scientific: 'Brachyteles', imagePrompt: 'A Muriqui monkey swinging through the Atlantic Forest canopy, high quality nature documentary photo' },
+            'onca-pintada-atl': { id: 'onca-pintada-atl', biome: 'atlantic', type: 'endotherm', optTemp: 25, maxTempTolerance: 14, namePT: 'Onça-pintada', nameEN: 'Jaguar', nameES: 'Jaguar', scientific: 'Panthera onca', imagePrompt: 'A majestic jaguar walking through the dense atlantic forest, dappled sunlight, highly detailed wildlife photography' }
+        };
+
+        const TRANSLATIONS = {
+            pt: {
+                app_title: "EcoFisio Simulador",
+                select_species: "Selecionar Espécie",
+                biome: "Bioma",
+                species: "Espécie",
+                biome_pampas: "Pampas",
+                biome_amazon: "Amazônia",
+                biome_atlantic: "Mata Atlântica",
+                image_placeholder: "Nenhuma imagem gerada",
+                generating_image: "Gerando IA...",
+                btn_generate_image: "Gerar Imagem IA",
+                env_controls: "Ambiente",
+                temperature: "Temperatura",
+                water: "Água",
+                food: "Alimento",
+                body_temp: "Temp. Corporal",
+                metabolism: "Metabolismo",
+                stress: "Nível de Estresse",
+                survival: "Sobrevivência",
+                timeline_title: "Evolução por Gerações",
+                btn_next_gen: "Avançar Geração",
+                ai_tutor: "Tutor IA (Gemini)",
+                ai_prompt_hint: "Ajuste os parâmetros ou avance gerações e peça para a IA explicar a fisiologia desta espécie nas condições atuais.",
+                btn_ask_ai: "Explicar Cenário Atual",
+                type_endotherm: "Endotérmico",
+                type_ectotherm: "Ectotérmico",
+                loading_ai: "O Tutor IA está analisando a fisiologia..."
+            },
+            en: {
+                app_title: "EcoPhysio Simulator",
+                select_species: "Select Species",
+                biome: "Biome",
+                species: "Species",
+                biome_pampas: "Pampas",
+                biome_amazon: "Amazon Rainforest",
+                biome_atlantic: "Atlantic Forest",
+                image_placeholder: "No image generated",
+                generating_image: "Generating AI...",
+                btn_generate_image: "Generate AI Image",
+                env_controls: "Environment",
+                temperature: "Temperature",
+                water: "Water",
+                food: "Food",
+                body_temp: "Body Temp",
+                metabolism: "Metabolism",
+                stress: "Stress Level",
+                survival: "Survival",
+                timeline_title: "Generational Evolution",
+                btn_next_gen: "Advance Generation",
+                ai_tutor: "AI Tutor (Gemini)",
+                ai_prompt_hint: "Adjust parameters or advance generations and ask the AI to explain the physiology of this species under current conditions.",
+                btn_ask_ai: "Explain Current Scenario",
+                type_endotherm: "Endotherm",
+                type_ectotherm: "Ectotherm",
+                loading_ai: "AI Tutor is analyzing the physiology..."
+            },
+            es: {
+                app_title: "Simulador EcoFisio",
+                select_species: "Seleccionar Especie",
+                biome: "Bioma",
+                species: "Especie",
+                biome_pampas: "Pampas",
+                biome_amazon: "Amazonía",
+                biome_atlantic: "Mata Atlántica",
+                image_placeholder: "Ninguna imagen generada",
+                generating_image: "Generando IA...",
+                btn_generate_image: "Generar Imagen IA",
+                env_controls: "Ambiente",
+                temperature: "Temperatura",
+                water: "Agua",
+                food: "Alimento",
+                body_temp: "Temp. Corporal",
+                metabolism: "Metabolismo",
+                stress: "Nivel de Estrés",
+                survival: "Supervivencia",
+                timeline_title: "Evolución por Generaciones",
+                btn_next_gen: "Avanzar Generación",
+                ai_tutor: "Tutor IA (Gemini)",
+                ai_prompt_hint: "Ajuste los parámetros o avance generaciones y pida a la IA que explique la fisiología de esta especie en las condiciones actuales.",
+                btn_ask_ai: "Explicar Escenario Actual",
+                type_endotherm: "Endotermo",
+                type_ectotherm: "Ectotermo",
+                loading_ai: "El Tutor IA está analizando la fisiología..."
+            }
+        };
+
+        // --- 2. STATE MANAGEMENT ---
+        
+        let currentState = {
+            lang: 'pt',
+            biome: 'pampas',
+            speciesId: 'capivara',
+            env: {
+                temp: 25,
+                water: 100,
+                food: 100
+            },
+            stats: {
+                bodyTemp: 0,
+                metabolism: 100,
+                stress: 0,
+                survival: 100
+            },
+            generation: 0,
+            history: [] // Array of stat objects
+        };
+
+        let chartInstance = null;
+
+        // --- 3. DOM ELEMENTS ---
+        const els = {
+            lang: document.getElementById('languageSelect'),
+            biome: document.getElementById('biomeSelect'),
+            species: document.getElementById('speciesSelect'),
+            
+            imgContainer: document.getElementById('imageContainer'),
+            imgEl: document.getElementById('speciesImage'),
+            imgPlaceholder: document.getElementById('imagePlaceholder'),
+            imgLoader: document.getElementById('imageLoader'),
+            btnGenImg: document.getElementById('btnGenerateImage'),
+            
+            nameDisplay: document.getElementById('speciesNameDisplay'),
+            scientificDisplay: document.getElementById('speciesScientificDisplay'),
+            thermoBadge: document.getElementById('thermoBadge'),
+            
+            sliderTemp: document.getElementById('sliderTemp'),
+            sliderWater: document.getElementById('sliderWater'),
+            sliderFood: document.getElementById('sliderFood'),
+            valTemp: document.getElementById('valTemp'),
+            valWater: document.getElementById('valWater'),
+            valFood: document.getElementById('valFood'),
+            
+            statBodyTemp: document.getElementById('statBodyTemp'),
+            statMetabolism: document.getElementById('statMetabolism'),
+            statStress: document.getElementById('statStress'),
+            statSurvival: document.getElementById('statSurvival'),
+            
+            btnReset: document.getElementById('btnReset'),
+            btnAdvanceGen: document.getElementById('btnAdvanceGen'),
+            
+            aiArea: document.getElementById('aiResponseArea'),
+            btnAskAI: document.getElementById('btnAskAI')
+        };
+
+        // --- 4. INITIALIZATION & LOGIC ---
+
+        function calculatePhysiology() {
+            const sp = SPECIES_DB[currentState.speciesId];
+            const { temp: envTemp, water, food } = currentState.env;
+            
+            let bodyTemp, metabolism, stress, survival;
+
+            // Calculate Body Temperature & Metabolism
+            if (sp.type === 'endotherm') {
+                // Endotherms maintain body temp, but burn energy if env temp is far from optimal
+                const tempDiff = envTemp - sp.optTemp;
+                
+                // Body temp slightly fluctuates under extreme stress
+                bodyTemp = sp.optTemp + (tempDiff * 0.05); 
+                
+                // Metabolism increases when cold (shivering) or hot (panting/sweating)
+                metabolism = 100 + (Math.abs(tempDiff) * 5);
+            } else {
+                // Ectotherms body temp follows environment closely
+                bodyTemp = envTemp * 0.8 + sp.optTemp * 0.2; 
+                
+                // Metabolism scales with temperature (Q10 effect roughly)
+                metabolism = 20 + (bodyTemp * 3);
+            }
+
+            // Calculate Stress
+            const tempStress = Math.max(0, (Math.abs(envTemp - sp.optTemp) / sp.maxTempTolerance) * 100);
+            const waterStress = 100 - water;
+            const foodStress = 100 - food;
+            
+            // Overheating or freezing gives massive stress
+            let extremeTempStress = 0;
+            if (Math.abs(envTemp - sp.optTemp) > sp.maxTempTolerance) {
+                extremeTempStress = 50; 
+            }
+
+            stress = Math.min(100, (tempStress * 0.4) + (waterStress * 0.3) + (foodStress * 0.3) + extremeTempStress);
+            
+            // Calculate Survival
+            survival = Math.max(0, 100 - stress);
+
+            // Update State
+            currentState.stats = {
+                bodyTemp: bodyTemp,
+                metabolism: metabolism,
+                stress: stress,
+                survival: survival
+            };
+
+            updateUIStats();
+        }
+
+        function updateUIStats() {
+            els.valTemp.textContent = `${currentState.env.temp}°C`;
+            els.valWater.textContent = `${currentState.env.water}%`;
+            els.valFood.textContent = `${currentState.env.food}%`;
+
+            els.statBodyTemp.textContent = `${currentState.stats.bodyTemp.toFixed(1)}°C`;
+            els.statMetabolism.textContent = `${currentState.stats.metabolism.toFixed(0)}%`;
+            els.statStress.textContent = `${currentState.stats.stress.toFixed(0)}%`;
+            els.statSurvival.textContent = `${currentState.stats.survival.toFixed(0)}%`;
+
+            // Color coding
+            els.statStress.className = `text-2xl font-bold mt-1 ${currentState.stats.stress > 70 ? 'text-red-600' : currentState.stats.stress > 30 ? 'text-orange-500' : 'text-green-600'}`;
+            els.statSurvival.className = `text-2xl font-bold mt-1 ${currentState.stats.survival < 30 ? 'text-red-600' : currentState.stats.survival < 70 ? 'text-orange-500' : 'text-green-600'}`;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('simulationChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Generations
+                    datasets: [
+                        {
+                            label: 'Sobrevivência (%)',
+                            data: [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Estresse (%)',
+                            data: [],
+                            borderColor: '#a855f7',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100 },
+                        x: { title: { display: true, text: 'Geração' } }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
+        function updateChartLabels() {
+            if(!chartInstance) return;
+            const lang = currentState.lang;
+            const tr = TRANSLATIONS[lang];
+            chartInstance.data.datasets[0].label = tr.survival + ' (%)';
+            chartInstance.data.datasets[1].label = tr.stress + ' (%)';
+            chartInstance.options.scales.x.title.text = lang === 'pt' ? 'Geração' : (lang === 'en' ? 'Generation' : 'Generación');
+            chartInstance.update();
+        }
+
+        function advanceGeneration() {
+            calculatePhysiology();
+            currentState.generation++;
+            
+            // Save to history
+            currentState.history.push({
+                gen: currentState.generation,
+                survival: currentState.stats.survival,
+                stress: currentState.stats.stress
+            });
+
+            // Update chart
+            chartInstance.data.labels.push(currentState.generation);
+            chartInstance.data.datasets[0].data.push(currentState.stats.survival);
+            chartInstance.data.datasets[1].data.push(currentState.stats.stress);
+            chartInstance.update();
+        }
+
+        function resetSimulation() {
+            currentState.generation = 0;
+            currentState.history = [];
+            chartInstance.data.labels = [];
+            chartInstance.data.datasets[0].data = [];
+            chartInstance.data.datasets[1].data = [];
+            chartInstance.update();
+            els.aiArea.innerHTML = `<span class="text-gray-400 italic">${TRANSLATIONS[currentState.lang].ai_prompt_hint}</span>`;
+            
+            // Reset image
+            els.imgEl.src = "";
+            els.imgEl.classList.add('hidden');
+            els.imgPlaceholder.classList.remove('hidden');
+
+            calculatePhysiology();
+        }
+
+        function populateSpeciesDropdown() {
+            els.species.innerHTML = '';
+            for (const key in SPECIES_DB) {
+                const sp = SPECIES_DB[key];
+                if (sp.biome === currentState.biome) {
+                    const option = document.createElement('option');
+                    option.value = sp.id;
+                    option.textContent = currentState.lang === 'pt' ? sp.namePT : (currentState.lang === 'en' ? sp.nameEN : sp.nameES);
+                    els.species.appendChild(option);
+                }
+            }
+            if(els.species.options.length > 0) {
+                currentState.speciesId = els.species.options[0].value;
+                updateSpeciesInfo();
+            }
+        }
+
+        function updateSpeciesInfo() {
+            const sp = SPECIES_DB[currentState.speciesId];
+            els.nameDisplay.textContent = currentState.lang === 'pt' ? sp.namePT : (currentState.lang === 'en' ? sp.nameEN : sp.nameES);
+            els.scientificDisplay.textContent = sp.scientific;
+            
+            const tr = TRANSLATIONS[currentState.lang];
+            els.thermoBadge.textContent = sp.type === 'endotherm' ? tr.type_endotherm : tr.type_ectotherm;
+            els.thermoBadge.className = sp.type === 'endotherm' 
+                ? 'text-xs font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800' 
+                : 'text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800';
+            
+            // Set slider defaults based on optimal temp
+            els.sliderTemp.value = sp.optTemp;
+            currentState.env.temp = sp.optTemp;
+            els.sliderWater.value = 100;
+            currentState.env.water = 100;
+            els.sliderFood.value = 100;
+            currentState.env.food = 100;
+            
+            resetSimulation();
+        }
+
+        function updateLanguage() {
+            const lang = currentState.lang;
+            const dict = TRANSLATIONS[lang];
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    if (el.tagName === 'INPUT' && el.type === 'placeholder') {
+                        el.placeholder = dict[key];
+                    } else {
+                        el.textContent = dict[key];
+                    }
+                }
+            });
+            
+            populateSpeciesDropdown();
+            updateChartLabels();
+            
+            // Update AI area if it has the hint
+            if(els.aiArea.querySelector('span.text-gray-400')) {
+                els.aiArea.innerHTML = `<span class="text-gray-400 italic">${dict.ai_prompt_hint}</span>`;
+            }
+        }
+
+        async function fetchImageFromAI() {
+            const sp = SPECIES_DB[currentState.speciesId];
+            
+            // Show loader
+            els.imgPlaceholder.classList.add('hidden');
+            els.imgEl.classList.add('hidden');
+            els.imgLoader.classList.remove('hidden');
+
+            try {
+                const payload = { 
+                    instances: { prompt: sp.imagePrompt }, 
+                    parameters: { sampleCount: 1 } 
+                };
+                const apiKey = ""; // Canvas provides this
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    els.imgEl.src = imageUrl;
+                    els.imgEl.classList.remove('hidden');
+                } else {
+                    throw new Error("Invalid image response");
+                }
+            } catch (error) {
+                console.error("Image generation failed:", error);
+                els.imgPlaceholder.classList.remove('hidden');
+                els.imgPlaceholder.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400 text-3xl mb-2"></i><p class="text-sm">Erro ao gerar imagem</p>`;
+            } finally {
+                els.imgLoader.classList.add('hidden');
+            }
+        }
+
+        async function fetchAIExplanation() {
+            const sp = SPECIES_DB[currentState.speciesId];
+            const lang = currentState.lang;
+            const spName = lang === 'pt' ? sp.namePT : (lang === 'en' ? sp.nameEN : sp.nameES);
+            
+            // Setup loading state
+            els.btnAskAI.disabled = true;
+            els.btnAskAI.innerHTML = `<div class="loader" style="width:16px;height:16px;border-width:2px;"></div> Processando...`;
+            els.aiArea.innerHTML = `<div class="flex items-center gap-2 text-bio-600"><div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:#15803d;"></div> ${TRANSLATIONS[lang].loading_ai}</div>`;
+
+            // Build Prompt
+            const prompt = `
+            Você é um tutor interativo de biologia simulando dados ecológicos.
+            O usuário está simulando a espécie: ${spName} (${sp.scientific}).
+            Tipo de regulação térmica: ${sp.type === 'endotherm' ? 'Endotérmico' : 'Ectotérmico'}.
+            Temperatura ótima: ${sp.optTemp}°C.
+            
+            Condições Atuais do Ambiente:
+            - Temperatura: ${currentState.env.temp}°C
+            - Disponibilidade de Água: ${currentState.env.water}%
+            - Disponibilidade de Alimento: ${currentState.env.food}%
+            
+            Resposta Fisiológica Atual:
+            - Temperatura Corporal: ${currentState.stats.bodyTemp.toFixed(1)}°C
+            - Taxa Metabólica: ${currentState.stats.metabolism.toFixed(0)}%
+            - Nível de Estresse: ${currentState.stats.stress.toFixed(0)}%
+            - Probabilidade de Sobrevivência: ${currentState.stats.survival.toFixed(0)}%
+            
+            Tarefas:
+            1. Analise como os parâmetros ambientais estão afetando a fisiologia do animal.
+            2. Explique os mecanismos biológicos (termorregulação, gasto energético) que justificam a Taxa Metabólica e a Temperatura Corporal atuais.
+            3. Dê uma resposta curta (máximo 2 parágrafos).
+            4. Responda no idioma: ${lang === 'pt' ? 'Português do Brasil' : (lang === 'en' ? 'Inglês' : 'Espanhol')}.
+            5. Use linguagem adequada e empolgante para estudantes do ensino médio.
+            `;
+
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }]
+                };
+                const apiKey = ""; // Canvas provides this
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    // Format response with some basic HTML formatting if markdown is present
+                    const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                    els.aiArea.innerHTML = formattedText;
+                } else {
+                    throw new Error("Invalid text response");
+                }
+            } catch (error) {
+                console.error("AI Text generation failed:", error);
+                els.aiArea.innerHTML = `<span class="text-red-500">Ocorreu um erro ao consultar o Tutor IA. Tente novamente.</span>`;
+            } finally {
+                els.btnAskAI.disabled = false;
+                const dict = TRANSLATIONS[lang];
+                els.btnAskAI.innerHTML = `<i class="fa-solid fa-comment-dots"></i> <span>${dict.btn_ask_ai}</span>`;
+            }
+        }
+
+        
+        // Listeners for Controls
+        els.lang.addEventListener('change', (e) => {
+            currentState.lang = e.target.value;
+            updateLanguage();
+        });
+
+        els.biome.addEventListener('change', (e) => {
+            currentState.biome = e.target.value;
+            populateSpeciesDropdown();
+        });
+
+        els.species.addEventListener('change', (e) => {
+            currentState.speciesId = e.target.value;
+            updateSpeciesInfo();
+        });
+
+        // Slider Listeners
+        function bindSlider(element, stateKey, isEnv = true) {
+            element.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (isEnv) currentState.env[stateKey] = val;
+                calculatePhysiology();
+            });
+        }
+        bindSlider(els.sliderTemp, 'temp');
+        bindSlider(els.sliderWater, 'water');
+        bindSlider(els.sliderFood, 'food');
+
+        // Buttons
+        els.btnAdvanceGen.addEventListener('click', advanceGeneration);
+        els.btnReset.addEventListener('click', resetSimulation);
+        els.btnGenImg.addEventListener('click', fetchImageFromAI);
+        els.btnAskAI.addEventListener('click', fetchAIExplanation);
+
+        // Boot
+        window.onload = () => {
+            initChart();
+            updateLanguage(); // Populates dropdowns and sets initial state
+            resetSimulation(); // Adds first data point to chart
+        };
+
+    </script>
+</body>
+</html>
