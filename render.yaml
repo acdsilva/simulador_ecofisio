@@ -1,0 +1,15 @@
+# Blueprint do Render (https://render.com). Ao conectar este repositório,
+# o Render lê este arquivo e cria o serviço automaticamente.
+services:
+  - type: web
+    name: ecofisiolab
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      # Cole sua chave do Google Gemini no painel do Render (não fica no código).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash

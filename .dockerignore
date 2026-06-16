@@ -1,0 +1,11 @@
+**/node_modules
+**/.venv
+**/dist
+**/.expo
+**/.metro-cache
+**/__pycache__
+**/.git
+**/.env
+**/.env.*
+**/*.log
+test_reports

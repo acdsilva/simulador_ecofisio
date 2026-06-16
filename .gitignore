@@ -1,0 +1,54 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+
+# Environment
+.env.local
+.env.production
+
+# Build
+build/
+*.apk
+*.aab
+
+# Cache
+.metro-cache/
+.cache/
+
+# Backup
+frontend-old/
+frontend-backup/
+
+# OS
+.DS_Store
+*.log
+
+# Testing
+test_result.md
+
+# Environment files (segredos) — mas manter os templates .env.example
+*.env
+*.env.*
+!.env.example
+!**/.env.example
+
+# Artefatos de plataforma/editor (não pertencem ao projeto)
+.claude/
+.emergent/
+/.gitconfig

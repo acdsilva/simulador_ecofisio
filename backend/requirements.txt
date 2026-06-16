@@ -1,0 +1,18 @@
+# --- Núcleo (obrigatório) ---
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.25
+pydantic>=2.5,<3
+python-dotenv>=1.0
+
+# --- IA opcional (Google Gemini) ---
+# Sem GEMINI_API_KEY o app usa explicações geradas localmente; o import é protegido,
+# então remover esta linha não quebra a aplicação.
+google-generativeai>=0.7
+
+# --- Banco opcional (MongoDB) ---
+# Usado apenas quando MONGO_URL está definido; caso contrário roda em memória.
+motor>=3.3
+
+# --- Testes ---
+requests>=2.31
+pytest>=7.4
