@@ -603,6 +603,36 @@ async def health():
     return {"message": "EcoFisioLab API", "status": "running", "ai": bool(GEMINI_API_KEY)}
 
 
+@app.get("/api/ai-check")
+async def ai_check():
+    """Diagnóstico TEMPORÁRIO da IA (Gemini) — remover depois de configurar."""
+    out = {"key_set": bool(GEMINI_API_KEY), "model": GEMINI_MODEL}
+    if not GEMINI_API_KEY:
+        return out
+    try:
+        import google.generativeai as genai
+
+        genai.configure(api_key=GEMINI_API_KEY)
+        try:
+            out["available_models"] = [
+                m.name
+                for m in genai.list_models()
+                if "generateContent" in getattr(m, "supported_generation_methods", [])
+            ]
+        except Exception as e:  # noqa: BLE001
+            out["list_error"] = f"{type(e).__name__}: {e}"
+        try:
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            resp = await asyncio.to_thread(model.generate_content, "Responda apenas: ok")
+            out["generate_ok"] = bool((getattr(resp, "text", "") or "").strip())
+            out["sample"] = (getattr(resp, "text", "") or "")[:80]
+        except Exception as e:  # noqa: BLE001
+            out["generate_error"] = f"{type(e).__name__}: {e}"
+    except Exception as e:  # noqa: BLE001
+        out["sdk_error"] = f"{type(e).__name__}: {e}"
+    return out
+
+
 @app.get("/api/species", response_model=List[Species])
 async def get_all_species():
     return [Species(**sp) for sp in await store.list_species()]
