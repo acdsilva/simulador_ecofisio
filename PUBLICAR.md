@@ -31,7 +31,8 @@ Você faz isto **uma única vez**. Tempo estimado: ~15 minutos. Tudo é gratuito
 
 1. Crie uma conta grátis em **https://render.com** (pode entrar com o GitHub).
 2. No painel, clique em **New +** → **Blueprint**.
-3. Conecte sua conta do GitHub e **selecione o repositório** `ecofisiolab`.
+3. Conecte sua conta do GitHub e **selecione o repositório** `simulador_ecofisio`.
+   Quando pedir a **branch**, escolha **`Projeto-1.0`** (é onde está o projeto).
 4. O Render vai ler o arquivo `render.yaml` e mostrar o serviço **ecofisiolab**.
    Clique em **Apply** / **Create**.
 
