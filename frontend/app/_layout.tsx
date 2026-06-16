@@ -8,6 +8,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="species" />
         <Stack.Screen name="simulator" />
+        <Stack.Screen name="map" />
       </Stack>
     </LanguageProvider>
   );
