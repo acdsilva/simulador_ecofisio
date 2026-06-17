@@ -571,22 +571,57 @@ def build_local_explanation(species_name: str, r: SimulationResponse, language: 
     return f"{p1}\n\n{p2}\n\n{p3}"
 
 
-async def generate_explanation(species_name: str, r: SimulationResponse, language: str) -> str:
-    """Tenta o Gemini; se não houver chave/SDK ou ocorrer erro, usa o fallback local."""
-    if GEMINI_API_KEY:
-        try:
-            import google.generativeai as genai  # import tardio
+# Modelo Gemini resolvido dinamicamente a partir dos modelos disponíveis para a chave,
+# evitando depender de um nome fixo (que pode ser descontinuado com o tempo).
+_resolved_model: Optional[str] = None
 
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel(GEMINI_MODEL)
-            prompt = build_prompt(species_name, r, language)
-            response = await asyncio.to_thread(model.generate_content, prompt)
-            text = (getattr(response, "text", "") or "").strip()
-            if text:
-                return text
-        except Exception as exc:  # noqa: BLE001 — qualquer falha cai no fallback
-            print(f"[ai] Gemini indisponível ({exc}); usando explicação local")
-    return build_local_explanation(species_name, r, language)
+
+def _resolve_gemini_model(genai) -> str:
+    global _resolved_model
+    if _resolved_model:
+        return _resolved_model
+    try:
+        available = [
+            m.name.split("/")[-1]
+            for m in genai.list_models()
+            if "generateContent" in getattr(m, "supported_generation_methods", [])
+        ]
+    except Exception:
+        available = []
+    preference = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-flash"]
+    chosen = None
+    for p in preference:
+        if p and (not available or p in available):
+            chosen = p
+            break
+    if not chosen:
+        flash = [a for a in available if "flash" in a]
+        chosen = (flash or available or [GEMINI_MODEL])[0]
+    _resolved_model = chosen
+    print(f"[ai] modelo Gemini selecionado: {chosen} ({len(available)} disponíveis)")
+    return chosen
+
+
+async def _gemini_generate(prompt: str) -> Optional[str]:
+    """Chama o Gemini e retorna o texto; None se não houver chave ou ocorrer erro."""
+    if not GEMINI_API_KEY:
+        return None
+    try:
+        import google.generativeai as genai  # import tardio
+
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(_resolve_gemini_model(genai))
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        return (getattr(response, "text", "") or "").strip() or None
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ai] Gemini indisponível ({exc})")
+        return None
+
+
+async def generate_explanation(species_name: str, r: SimulationResponse, language: str) -> str:
+    """Tenta o Gemini; se indisponível, usa a explicação local determinística."""
+    text = await _gemini_generate(build_prompt(species_name, r, language))
+    return text or build_local_explanation(species_name, r, language)
 
 
 # ---------------------------------------------------------------------------
@@ -653,19 +688,10 @@ def chat_fallback(messages: List[ChatMessage], language: str) -> str:
 async def generate_chat_reply(
     messages: List[ChatMessage], species_name: Optional[str], language: str
 ) -> str:
-    if GEMINI_API_KEY and messages:
-        try:
-            import google.generativeai as genai  # import tardio
-
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel(GEMINI_MODEL)
-            prompt = build_chat_prompt(messages, species_name, language)
-            response = await asyncio.to_thread(model.generate_content, prompt)
-            text = (getattr(response, "text", "") or "").strip()
-            if text:
-                return text
-        except Exception as exc:  # noqa: BLE001
-            print(f"[ai] Gemini (chat) indisponível ({exc}); usando fallback")
+    if messages:
+        text = await _gemini_generate(build_chat_prompt(messages, species_name, language))
+        if text:
+            return text
     return chat_fallback(messages, language)
 
 
