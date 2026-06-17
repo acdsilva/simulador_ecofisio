@@ -8,11 +8,19 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Species, SimulationResult, speciesApi, simulationApi } from '../services/api';
+import {
+  Species,
+  SimulationResult,
+  ChatMessage,
+  speciesApi,
+  simulationApi,
+  chatApi,
+} from '../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 
@@ -30,6 +38,10 @@ export default function SimulatorScreen() {
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     loadSpecies();
@@ -81,6 +93,29 @@ export default function SimulatorScreen() {
       console.error('Error getting explanation:', error);
     } finally {
       setLoadingExplanation(false);
+    }
+  };
+
+  const sendChat = async (text: string) => {
+    const message = text.trim();
+    if (!message || chatLoading) return;
+
+    const speciesName = species ? (language === 'pt' ? species.name_pt : species.name_en) : null;
+    const history: ChatMessage[] = [...chatMessages, { role: 'user', text: message }];
+    setChatMessages(history);
+    setChatInput('');
+    try {
+      setChatLoading(true);
+      const reply = await chatApi.send(history, speciesName, language);
+      setChatMessages([...history, { role: 'assistant', text: reply }]);
+    } catch (error) {
+      console.error('Error in chat:', error);
+      setChatMessages([
+        ...history,
+        { role: 'assistant', text: language === 'pt' ? 'Erro ao responder. Tente novamente.' : 'Failed to reply. Try again.' },
+      ]);
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -311,6 +346,65 @@ export default function SimulatorScreen() {
                 <Text style={styles.explanationText}>{explanation}</Text>
               </View>
             )}
+
+            <View style={styles.chatSection}>
+              <View style={styles.explanationHeader}>
+                <Ionicons name="chatbubbles" size={22} color="#4CAF50" />
+                <Text style={styles.explanationTitle}>{t('chatTitle')}</Text>
+              </View>
+              <Text style={styles.chatIntro}>{t('chatIntro')}</Text>
+
+              {chatMessages.map((m, i) => (
+                <View
+                  key={i}
+                  style={[styles.bubbleWrap, m.role === 'user' ? styles.bubbleWrapUser : styles.bubbleWrapAi]}
+                >
+                  {m.role === 'assistant' && <Text style={styles.bubbleAuthor}>{t('professor')}</Text>}
+                  <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAi]}>
+                    <Text style={m.role === 'user' ? styles.bubbleTextUser : styles.bubbleTextAi}>
+                      {m.text}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+              {chatLoading && (
+                <ActivityIndicator color="#4CAF50" style={{ marginVertical: 10, alignSelf: 'flex-start' }} />
+              )}
+
+              <View style={styles.suggestions}>
+                {[t('suggestBooks'), t('suggestWhy'), t('suggestExample'), t('suggestCuriosity')].map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    style={styles.chip}
+                    onPress={() => sendChat(s)}
+                    disabled={chatLoading}
+                  >
+                    <Text style={styles.chipText}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.chatInputRow}>
+                <TextInput
+                  style={styles.chatInput}
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  placeholder={t('chatPlaceholder')}
+                  placeholderTextColor="#888"
+                  onSubmitEditing={() => sendChat(chatInput)}
+                  editable={!chatLoading}
+                  multiline
+                />
+                <TouchableOpacity
+                  style={styles.chatSend}
+                  onPress={() => sendChat(chatInput)}
+                  disabled={chatLoading}
+                >
+                  <Ionicons name="send" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -536,5 +630,101 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontSize: 14,
     lineHeight: 22,
+  },
+  chatSection: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 16,
+    marginTop: 16,
+  },
+  chatIntro: {
+    color: '#888',
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  bubbleWrap: {
+    marginBottom: 10,
+    maxWidth: '88%',
+  },
+  bubbleWrapUser: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  bubbleWrapAi: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  bubbleAuthor: {
+    color: '#4CAF50',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 2,
+    marginLeft: 4,
+  },
+  bubble: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 14,
+  },
+  bubbleUser: {
+    backgroundColor: '#4CAF50',
+    borderBottomRightRadius: 4,
+  },
+  bubbleAi: {
+    backgroundColor: '#2a2a2a',
+    borderBottomLeftRadius: 4,
+  },
+  bubbleTextUser: {
+    color: 'white',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  bubbleTextAi: {
+    color: '#eee',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  suggestions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  chip: {
+    backgroundColor: '#2a2a2a',
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  chipText: {
+    color: '#9CCC65',
+    fontSize: 12,
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: 'white',
+    fontSize: 14,
+    maxHeight: 120,
+    marginRight: 8,
+  },
+  chatSend: {
+    backgroundColor: '#4CAF50',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

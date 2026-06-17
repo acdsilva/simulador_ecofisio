@@ -79,6 +79,17 @@ class ExplanationRequest(BaseModel):
     language: str
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" ou "assistant"
+    text: str
+
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    species_name: Optional[str] = None
+    language: str = "pt"
+
+
 # ---------------------------------------------------------------------------
 # Dados das espécies (semente)
 # ---------------------------------------------------------------------------
@@ -579,6 +590,86 @@ async def generate_explanation(species_name: str, r: SimulationResponse, languag
 
 
 # ---------------------------------------------------------------------------
+# Chat com "professor de biologia" (Gemini opcional, com fallback)
+# ---------------------------------------------------------------------------
+def build_chat_prompt(messages: List[ChatMessage], species_name: Optional[str], language: str) -> str:
+    if language == "pt":
+        system = (
+            "Você é um professor de biologia experiente e acolhedor, que ensina estudantes do "
+            "ensino médio. Responda SEMPRE no contexto de biologia (ecologia, fisiologia, "
+            "evolução, zoologia, botânica etc.). Se perguntarem algo fora de biologia, traga "
+            "gentilmente de volta ao tema. Use linguagem clara, com exemplos. Quando o aluno "
+            "pedir referências, recomende livros e artigos confiáveis, citando autor e ano "
+            "quando possível. Seja conciso (no máximo ~150 palavras)."
+        )
+        ctx = f"\nTema atual: a espécie {species_name}." if species_name else ""
+        labels = ("Aluno", "Professor")
+        ending = "\nProfessor:"
+    else:
+        system = (
+            "You are an experienced, welcoming biology teacher for high school students. Always "
+            "answer within biology (ecology, physiology, evolution, zoology, botany, etc.). If "
+            "asked something outside biology, gently steer back. Use clear language with examples. "
+            "When asked for references, recommend reputable books and articles, citing author and "
+            "year when possible. Be concise (max ~150 words)."
+        )
+        ctx = f"\nCurrent topic: the species {species_name}." if species_name else ""
+        labels = ("Student", "Teacher")
+        ending = "\nTeacher:"
+
+    transcript = "\n".join(
+        f"{labels[0] if m.role == 'user' else labels[1]}: {m.text}" for m in messages
+    )
+    return f"{system}{ctx}\n\n{transcript}{ending}"
+
+
+def chat_fallback(messages: List[ChatMessage], language: str) -> str:
+    last = messages[-1].text.lower() if messages else ""
+    wants_refs = any(w in last for w in ["livro", "artigo", "referên", "book", "article", "paper"])
+    if language == "pt":
+        if wants_refs:
+            return (
+                "Estou sem acesso à IA agora, mas seguem pontos de partida confiáveis: o livro "
+                '"Biologia" (Campbell), a Enciclopédia da Vida (eol.org), o Google Acadêmico '
+                "(scholar.google.com) e a SciELO (scielo.org) para artigos em português. Para "
+                "conversarmos livremente, peça para configurar a chave do Gemini no servidor."
+            )
+        return (
+            "No momento estou sem acesso à IA para conversar (a chave do Gemini não está "
+            "configurada no servidor). Assim que ativá-la, respondo suas dúvidas de biologia aqui."
+        )
+    if wants_refs:
+        return (
+            'I am offline right now, but here are reliable starting points: Campbell\'s "Biology", '
+            "the Encyclopedia of Life (eol.org), Google Scholar (scholar.google.com) and PubMed "
+            "(pubmed.ncbi.nlm.nih.gov). To chat freely, ask to set the Gemini key on the server."
+        )
+    return (
+        "I am currently offline for chat (the Gemini key is not configured on the server). "
+        "Once it is enabled, I can answer your biology questions right here."
+    )
+
+
+async def generate_chat_reply(
+    messages: List[ChatMessage], species_name: Optional[str], language: str
+) -> str:
+    if GEMINI_API_KEY and messages:
+        try:
+            import google.generativeai as genai  # import tardio
+
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            prompt = build_chat_prompt(messages, species_name, language)
+            response = await asyncio.to_thread(model.generate_content, prompt)
+            text = (getattr(response, "text", "") or "").strip()
+            if text:
+                return text
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ai] Gemini (chat) indisponível ({exc}); usando fallback")
+    return chat_fallback(messages, language)
+
+
+# ---------------------------------------------------------------------------
 # Aplicação
 # ---------------------------------------------------------------------------
 @asynccontextmanager
@@ -684,6 +775,12 @@ async def get_ai_explanation(request: ExplanationRequest):
         request.species_name, request.simulation_result, request.language
     )
     return {"explanation": explanation}
+
+
+@app.post("/api/chat")
+async def chat(request: ChatRequest):
+    reply = await generate_chat_reply(request.messages, request.species_name, request.language)
+    return {"reply": reply}
 
 
 # ---------------------------------------------------------------------------

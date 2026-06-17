@@ -90,6 +90,26 @@ export const simulationApi = {
   },
 };
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export const chatApi = {
+  send: async (
+    messages: ChatMessage[],
+    speciesName: string | null,
+    language: string
+  ): Promise<string> => {
+    const response = await api.post('/chat', {
+      messages,
+      species_name: speciesName,
+      language,
+    });
+    return response.data.reply;
+  },
+};
+
 export const biomesApi = {
   getAll: async (): Promise<string[]> => {
     const response = await api.get('/biomes');

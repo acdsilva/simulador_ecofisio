@@ -205,6 +205,42 @@ const translations: Translations = {
   noSpeciesHere: {
     pt: 'Sem animais cadastrados neste bioma.',
     en: 'No animals registered in this biome.'
+  },
+  chatTitle: {
+    pt: 'Converse com o Professor',
+    en: 'Chat with the Teacher'
+  },
+  chatIntro: {
+    pt: 'Tire dúvidas de biologia ou peça referências sobre este tema.',
+    en: 'Ask biology questions or request references on this topic.'
+  },
+  chatPlaceholder: {
+    pt: 'Escreva sua pergunta...',
+    en: 'Type your question...'
+  },
+  send: {
+    pt: 'Enviar',
+    en: 'Send'
+  },
+  suggestBooks: {
+    pt: '📚 Recomende livros e artigos sobre este assunto',
+    en: '📚 Recommend books and articles on this topic'
+  },
+  suggestWhy: {
+    pt: 'Por que isso acontece?',
+    en: 'Why does this happen?'
+  },
+  suggestExample: {
+    pt: 'Dê um exemplo do dia a dia',
+    en: 'Give an everyday example'
+  },
+  suggestCuriosity: {
+    pt: 'Conte uma curiosidade sobre esta espécie',
+    en: 'Tell a fun fact about this species'
+  },
+  professor: {
+    pt: 'Professor',
+    en: 'Teacher'
   }
 };
 
