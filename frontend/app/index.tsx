@@ -59,6 +59,14 @@ export default function HomeScreen() {
           <Text style={styles.startButtonText}>{t('selectSpecies')}</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.mapButton}
+          onPress={() => router.push('/map')}
+        >
+          <Ionicons name="map" size={22} color="#4CAF50" style={styles.buttonIcon} />
+          <Text style={styles.mapButtonText}>{t('habitatMap')}</Text>
+        </TouchableOpacity>
+
         <View style={styles.features}>
           <View style={styles.feature}>
             <Ionicons name="thermometer" size={32} color="#FF9800" />
@@ -154,7 +162,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 18,
     borderRadius: 12,
-    marginVertical: 16,
+    marginTop: 16,
+  },
+  mapButton: {
+    backgroundColor: '#2a2a2a',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  mapButtonText: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonIcon: {
     marginRight: 8,

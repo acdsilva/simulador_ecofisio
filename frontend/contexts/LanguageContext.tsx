@@ -181,6 +181,30 @@ const translations: Translations = {
   back: {
     pt: 'Voltar',
     en: 'Back'
+  },
+  habitatMap: {
+    pt: 'Mapa de Habitats',
+    en: 'Habitat Map'
+  },
+  hoverPrompt: {
+    pt: 'Passe o mouse (ou toque) sobre um estado para ver os animais daquele habitat.',
+    en: 'Hover (or tap) a state to see the animals of that habitat.'
+  },
+  legend: {
+    pt: 'Legenda',
+    en: 'Legend'
+  },
+  otherBiomes: {
+    pt: 'Outros biomas',
+    en: 'Other biomes'
+  },
+  speciesInHabitat: {
+    pt: 'Selecione um habitat no mapa ou na legenda.',
+    en: 'Select a habitat on the map or legend.'
+  },
+  noSpeciesHere: {
+    pt: 'Sem animais cadastrados neste bioma.',
+    en: 'No animals registered in this biome.'
   }
 };
 
