@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Species, speciesApi, biomesApi } from '../services/api';
+import { biomeLabel } from '../constants/biomes';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SpeciesScreen() {
@@ -47,17 +48,7 @@ export default function SpeciesScreen() {
     ? species
     : species.filter(s => s.biome === selectedBiome);
 
-  const biomeKeys: Record<string, string> = {
-    'Pampa': 'pampa',
-    'Amazônia': 'amazonia',
-    'Mata Atlântica': 'mataAtlantica',
-    'Caatinga': 'caatinga',
-  };
-
-  const translateBiome = (biome: string) => {
-    const key = biomeKeys[biome];
-    return key ? t(key) : biome;
-  };
+  const translateBiome = (biome: string) => biomeLabel(biome, t);
 
   const translateType = (type: string) => {
     if (type === 'mammal') return t('mammal');

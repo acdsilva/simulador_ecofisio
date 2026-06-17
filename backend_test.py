@@ -167,6 +167,40 @@ def main() -> int:
         except Exception as e:
             check("POST /api/explain", False, str(e))
 
+    # Chat (Gemini ou fallback) + limites de payload
+    try:
+        r = requests.post(
+            f"{BASE_URL}/api/chat",
+            json={"messages": [{"role": "user", "text": "O que é homeostase?"}], "language": "pt"},
+            timeout=40,
+        )
+        check("POST /api/chat 200", r.status_code == 200, f"HTTP {r.status_code}")
+        check("Resposta do chat não vazia", len(r.json().get("reply", "")) > 10, "")
+
+        big = requests.post(
+            f"{BASE_URL}/api/chat",
+            json={"messages": [{"role": "user", "text": "x" * 9000}], "language": "pt"},
+            timeout=15,
+        )
+        check("Chat recusa texto gigante -> 422", big.status_code == 422, f"HTTP {big.status_code}")
+    except Exception as e:
+        check("POST /api/chat", False, str(e))
+
+    # Segurança: path traversal deve ser bloqueado (usa http.client p/ não normalizar o path)
+    try:
+        import http.client
+        from urllib.parse import urlparse
+
+        u = urlparse(BASE_URL)
+        conn = http.client.HTTPConnection(u.hostname, u.port or 80, timeout=15)
+        conn.request("GET", "/../../backend/server.py")
+        body = conn.getresponse().read()
+        conn.close()
+        leaked = b"from app.main import" in body or b"GEMINI_API_KEY" in body
+        check("Path traversal bloqueado (não vaza fonte)", not leaked, "VAZOU código-fonte!")
+    except Exception as e:
+        check("Teste de path traversal", False, str(e))
+
     print(f"\n=== Resultado: {passed} passaram, {failed} falharam ===")
     return 0 if failed == 0 else 1
 

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Species, speciesApi } from '../services/api';
+import { biomeLabel } from '../constants/biomes';
 import {
   BRAZIL_STATES,
   BIOME_COLORS,
@@ -23,14 +24,6 @@ import {
   MAP_HEIGHT,
   Biome,
 } from '../data/brazilStates';
-
-const BIOME_KEYS: Record<string, string> = {
-  'Amazônia': 'amazonia',
-  'Mata Atlântica': 'mataAtlantica',
-  'Caatinga': 'caatinga',
-  'Pampa': 'pampa',
-  'Outros': 'otherBiomes',
-};
 
 // Biomas com espécies no app (na ordem da legenda). "Outros" fica à parte.
 const HABITAT_BIOMES: Biome[] = ['Amazônia', 'Mata Atlântica', 'Caatinga', 'Pampa'];
@@ -61,10 +54,7 @@ export default function MapScreen() {
     return map;
   }, [species]);
 
-  const translateBiome = (biome: string) => {
-    const key = BIOME_KEYS[biome];
-    return key ? t(key) : biome;
-  };
+  const translateBiome = (biome: string) => biomeLabel(biome, t);
 
   const svgWidth = Math.min(width - 32, 460);
   const svgHeight = (svgWidth * MAP_HEIGHT) / MAP_WIDTH;
