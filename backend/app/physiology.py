@@ -13,6 +13,10 @@ Q10 = 2.5             # fator Q10 (metabolismo do ectotérmico vs. temperatura)
 T_REF_ECTO = 30.0     # temperatura de referência do ectotérmico (°C)
 KCAL_PER_L_O2 = 4.8   # equivalente calórico do oxigênio (kcal por litro de O₂)
 MIN_PER_DAY = 1440
+O2_INSP_DEFAULT = 20.9
+O2_EXP_DEFAULT = 16.0
+# Extração de O₂ em repouso (fração). Na extração padrão, a respirometria reproduz a TMB.
+DEFAULT_EXTRACTION = (O2_INSP_DEFAULT - O2_EXP_DEFAULT) / 100.0
 
 
 def run_physiology(
@@ -59,9 +63,14 @@ def run_physiology(
     total_expenditure = bmr_kcal + thermo_cost + activity_cost + predator_cost
 
     # ===== Respirometria (VO₂) =====
-    vent = species.get("ventilation_rate_lmin", 0.0)
+    # A ventilação de repouso é calibrada para suprir o metabolismo (TMB): assim,
+    # na extração padrão de O₂, a energia por respirometria ≈ TMB — exatamente como
+    # se mede o metabolismo na vida real. Mudar O₂ inspirado/expirado altera a VO₂
+    # (demonstração do método).
+    vo2_required = bmr_kcal / (KCAL_PER_L_O2 * MIN_PER_DAY)   # L O₂/min exigidos pela TMB
+    resting_ventilation = vo2_required / DEFAULT_EXTRACTION   # L de ar/min em repouso
     extraction = max(0.0, o2_inspired - o2_expired) / 100.0
-    vo2_l_min = vent * extraction
+    vo2_l_min = resting_ventilation * extraction
     vo2_ml_g_h = (vo2_l_min * 60.0 / mass) if mass > 0 else 0.0  # mL O₂ / g / h
     energy_from_o2 = vo2_l_min * KCAL_PER_L_O2 * MIN_PER_DAY      # kcal/dia
 
@@ -82,12 +91,18 @@ def run_physiology(
     # ===== Estresse total e sobrevivência =====
     total_stress = min((temp_stress + water_stress + energy_stress + predator_stress) / 3.0, 1.0)
     survival = max(0.0, 1.0 - total_stress)
-    stress_breakdown = {
-        "termico": round(temp_stress * 100, 1),
-        "agua": round(water_stress * 100, 1),
-        "energia": round(energy_stress * 100, 1),
-        "predador": round(predator_stress * 100, 1),
+    # Composição do estresse: fração de cada fator no estresse total (soma = 100%).
+    raw = {
+        "termico": temp_stress,
+        "agua": water_stress,
+        "energia": energy_stress,
+        "predador": predator_stress,
     }
+    raw_sum = sum(raw.values())
+    if raw_sum > 0:
+        stress_breakdown = {k: round(v / raw_sum * 100, 1) for k, v in raw.items()}
+    else:
+        stress_breakdown = {k: 0.0 for k in raw}
 
     # ===== Índices do modo simples (relativos ao basal) =====
     if is_regulator:

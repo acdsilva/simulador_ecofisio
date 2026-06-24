@@ -215,24 +215,24 @@ INITIAL_SPECIES = [
 #  - kleiber_a: constante da Lei de Kleiber para TMB em kcal/dia (~70 mamíferos,
 #    ~78 aves). Ectotérmicos (réptil) usam o modelo Q10 e ignoram este valor.
 #  - body_temp_c: temperatura corporal típica do endotérmico (réptil = ambiente).
-#  - ventilation_rate_lmin: ventilação-minuto em repouso, estimada por alometria
-#    (≈ 0,38 · M^0,8 L/min).
+#  - ventilation_rate_lmin: ventilação-minuto em repouso, calibrada para suprir a
+#    TMB (na extração padrão de O₂, a respirometria reproduz o metabolismo basal).
 # Fontes: Kleiber (1932); Lasiewski & Dawson (1967, aves); valores de massa/Tb de
 # compêndios de fisiologia animal. Detalhes em CIENCIA.md.
 PHYSIOLOGY = {
-    "Hydrochoerus hydrochaeris": {"mass_kg": 50.0, "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 8.7},
-    "Vanellus chilensis":        {"mass_kg": 0.28, "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.14},
-    "Cavia aperea":              {"mass_kg": 0.5,  "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 0.22},
-    "Salvator merianae":         {"mass_kg": 3.5,  "kleiber_a": 70.0, "body_temp_c": 30.0, "ventilation_rate_lmin": 1.02},
-    "Panthera onca":             {"mass_kg": 85.0, "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 13.1},
-    "Anodorhynchus hyacinthinus":{"mass_kg": 1.5,  "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.52},
-    "Inia geoffrensis":          {"mass_kg": 120.0,"kleiber_a": 70.0, "body_temp_c": 36.0, "ventilation_rate_lmin": 17.3},
-    "Leontopithecus rosalia":    {"mass_kg": 0.6,  "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 0.25},
-    "Puma concolor":             {"mass_kg": 55.0, "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 9.4},
-    "Bradypus variegatus":       {"mass_kg": 4.0,  "kleiber_a": 70.0, "body_temp_c": 33.0, "ventilation_rate_lmin": 1.15},
-    "Mazama gouazoubira":        {"mass_kg": 17.0, "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 3.7},
-    "Tolypeutes tricinctus":     {"mass_kg": 1.5,  "kleiber_a": 70.0, "body_temp_c": 35.0, "ventilation_rate_lmin": 0.52},
-    "Patagioenas picazuro":      {"mass_kg": 0.35, "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.17},
+    "Hydrochoerus hydrochaeris": {"mass_kg": 50.0, "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 3.89},
+    "Vanellus chilensis":        {"mass_kg": 0.28, "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.09},
+    "Cavia aperea":              {"mass_kg": 0.5,  "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 0.12},
+    "Salvator merianae":         {"mass_kg": 3.5,  "kleiber_a": 70.0, "body_temp_c": 30.0, "ventilation_rate_lmin": 0.05},
+    "Panthera onca":             {"mass_kg": 85.0, "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 5.79},
+    "Anodorhynchus hyacinthinus":{"mass_kg": 1.5,  "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.31},
+    "Inia geoffrensis":          {"mass_kg": 120.0,"kleiber_a": 70.0, "body_temp_c": 36.0, "ventilation_rate_lmin": 7.49},
+    "Leontopithecus rosalia":    {"mass_kg": 0.6,  "kleiber_a": 70.0, "body_temp_c": 38.0, "ventilation_rate_lmin": 0.14},
+    "Puma concolor":             {"mass_kg": 55.0, "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 4.18},
+    "Bradypus variegatus":       {"mass_kg": 4.0,  "kleiber_a": 70.0, "body_temp_c": 33.0, "ventilation_rate_lmin": 0.58},
+    "Mazama gouazoubira":        {"mass_kg": 17.0, "kleiber_a": 70.0, "body_temp_c": 38.5, "ventilation_rate_lmin": 1.73},
+    "Tolypeutes tricinctus":     {"mass_kg": 1.5,  "kleiber_a": 70.0, "body_temp_c": 35.0, "ventilation_rate_lmin": 0.28},
+    "Patagioenas picazuro":      {"mass_kg": 0.35, "kleiber_a": 78.0, "body_temp_c": 41.0, "ventilation_rate_lmin": 0.10},
 }
 
 

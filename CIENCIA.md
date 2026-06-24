@@ -40,8 +40,10 @@ VO₂ (L/min) = ventilação · (O₂inspirado − O₂expirado)/100
 VO₂ (mL/g/h) = VO₂(L/min) · 60 / massa_kg
 energia (kcal/dia) = VO₂(L/min) · 4,8 · 1440
 ```
-4,8 kcal/L é o equivalente calórico do oxigênio. Ventilação em repouso estimada por alometria
-`≈ 0,38 · massa^0,8` L/min.
+4,8 kcal/L é o equivalente calórico do oxigênio. A **ventilação de repouso é calibrada para
+suprir a TMB**, de modo que, na extração padrão de O₂ (20,9% → 16%), a energia por
+respirometria **coincide com a Lei de Kleiber** — como na medida real. Alterar o O₂
+inspirado/expirado muda a VO₂, demonstrando o método.
 
 ### 6. Balanço energético
 ```

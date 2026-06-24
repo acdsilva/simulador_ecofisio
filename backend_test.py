@@ -169,6 +169,12 @@ def main() -> int:
         check("Gasto total ≥ TMB", r["total_expenditure_kcal"] >= bmr, "")
         check("stress_breakdown tem 4 fatores",
               set(r["stress_breakdown"].keys()) == {"termico", "agua", "energia", "predador"}, "")
+        # Respirometria calibrada: na extração padrão de O2, energia_O2 ≈ TMB
+        ratio = r["energy_from_o2_kcal"] / max(r["basal_metabolic_rate_kcal"], 1e-9)
+        check("Respirometria ≈ Kleiber (extração padrão)", abs(ratio - 1.0) < 0.02, f"razão={ratio:.3f}")
+        # Composição do estresse é uma partição (soma ~100%, ou 0 sem estresse)
+        bsum = sum(r["stress_breakdown"].values())
+        check("Composição do estresse soma ~100%", abs(bsum - 100) < 1.0 or bsum == 0, f"soma={bsum}")
         # Balanço energético: pouco alimento → negativo
         rneg = requests.post(f"{BASE_URL}/api/simulate", json={**base, "food_availability_kcal": 200}, timeout=10).json()
         check("Balanço energético negativo com pouco alimento", rneg["energy_balance_kcal"] < 0, str(rneg["energy_balance_kcal"]))
