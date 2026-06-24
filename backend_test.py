@@ -152,6 +152,34 @@ def main() -> int:
     except Exception as e:
         check("POST /api/simulate", False, str(e))
 
+    # Modo científico: Kleiber, respirometria e balanço energético
+    try:
+        sci_fields = {
+            "basal_metabolic_rate_kcal", "vo2_ml_g_h", "energy_from_o2_kcal",
+            "total_expenditure_kcal", "energy_balance_kcal", "thermoregulation_cost_kcal",
+            "stress_breakdown",
+        }
+        base = {"species_id": "hydrochoerus-hydrochaeris", "temperature": 28,
+                "water_availability": 70, "food_availability": 70, "language": "pt"}
+        r = requests.post(f"{BASE_URL}/api/simulate", json=base, timeout=10).json()
+        check("Resposta tem campos científicos", not (sci_fields - set(r.keys())), str(sci_fields - set(r.keys())))
+        # Kleiber: capivara (50 kg, a=70) → TMB ≈ 70·50^0.75 ≈ 1316 kcal/dia
+        bmr = r["basal_metabolic_rate_kcal"]
+        check("TMB de Kleiber plausível (~1316)", 1200 <= bmr <= 1450, f"{bmr}")
+        check("Gasto total ≥ TMB", r["total_expenditure_kcal"] >= bmr, "")
+        check("stress_breakdown tem 4 fatores",
+              set(r["stress_breakdown"].keys()) == {"termico", "agua", "energia", "predador"}, "")
+        # Balanço energético: pouco alimento → negativo
+        rneg = requests.post(f"{BASE_URL}/api/simulate", json={**base, "food_availability_kcal": 200}, timeout=10).json()
+        check("Balanço energético negativo com pouco alimento", rneg["energy_balance_kcal"] < 0, str(rneg["energy_balance_kcal"]))
+        # Q10: réptil metaboliza mais a 35 °C que a 15 °C
+        rep = {"species_id": "salvator-merianae", "water_availability": 70, "food_availability": 70, "language": "pt"}
+        b15 = requests.post(f"{BASE_URL}/api/simulate", json={**rep, "temperature": 15}, timeout=10).json()["basal_metabolic_rate_kcal"]
+        b35 = requests.post(f"{BASE_URL}/api/simulate", json={**rep, "temperature": 35}, timeout=10).json()["basal_metabolic_rate_kcal"]
+        check("Q10: réptil metaboliza mais no calor", b35 > b15, f"15°C={b15} 35°C={b35}")
+    except Exception as e:
+        check("Modo científico", False, str(e))
+
     # Explicação (Gemini ou fallback local)
     if sim_result:
         try:

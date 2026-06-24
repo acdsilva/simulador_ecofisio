@@ -28,6 +28,10 @@ export interface Species {
   food_type: string;
   description_pt: string;
   description_en: string;
+  mass_kg?: number;
+  kleiber_a?: number;
+  body_temp_c?: number;
+  ventilation_rate_lmin?: number;
 }
 
 export interface SimulationResult {
@@ -39,6 +43,21 @@ export interface SimulationResult {
   food_status: string;
   homeostasis_status: string;
   stress_level: number;
+  // Modo científico
+  basal_metabolic_rate_kcal: number;
+  vo2_ml_g_h: number;
+  energy_from_o2_kcal: number;
+  total_expenditure_kcal: number;
+  energy_balance_kcal: number;
+  thermoregulation_cost_kcal: number;
+  stress_breakdown: Record<string, number>;
+}
+
+export interface ScientificOptions {
+  foodKcal?: number;
+  predator?: boolean;
+  o2Inspired?: number;
+  o2Expired?: number;
 }
 
 export const speciesApi = {
@@ -64,7 +83,8 @@ export const simulationApi = {
     temperature: number,
     waterAvailability: number,
     foodAvailability: number,
-    language: string
+    language: string,
+    options?: ScientificOptions
   ): Promise<SimulationResult> => {
     const response = await api.post('/simulate', {
       species_id: speciesId,
@@ -72,6 +92,10 @@ export const simulationApi = {
       water_availability: waterAvailability,
       food_availability: foodAvailability,
       language,
+      ...(options?.foodKcal != null ? { food_availability_kcal: options.foodKcal } : {}),
+      ...(options?.predator != null ? { predator_presence: options.predator } : {}),
+      ...(options?.o2Inspired != null ? { o2_inspired: options.o2Inspired } : {}),
+      ...(options?.o2Expired != null ? { o2_expired: options.o2Expired } : {}),
     });
     return response.data;
   },

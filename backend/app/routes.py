@@ -57,7 +57,14 @@ async def simulate_physiology(request: SimulationRequest):
         raise HTTPException(status_code=404, detail="Species not found")
 
     result = run_physiology(
-        species, request.temperature, request.water_availability, request.food_availability
+        species,
+        request.temperature,
+        request.water_availability,
+        request.food_availability,
+        food_kcal=request.food_availability_kcal,
+        predator=request.predator_presence,
+        o2_inspired=request.o2_inspired,
+        o2_expired=request.o2_expired,
     )
     await store.save_simulation(
         {

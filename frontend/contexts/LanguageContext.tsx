@@ -241,7 +241,63 @@ const translations: Translations = {
   professor: {
     pt: 'Professor',
     en: 'Teacher'
-  }
+  },
+  scientificMode: {
+    pt: 'Modo científico',
+    en: 'Scientific mode'
+  },
+  foodKcal: {
+    pt: 'Alimento (kcal/dia)',
+    en: 'Food (kcal/day)'
+  },
+  predatorPresent: {
+    pt: 'Predador presente',
+    en: 'Predator present'
+  },
+  o2Inspired: {
+    pt: 'O₂ inspirado',
+    en: 'Inspired O₂'
+  },
+  o2Expired: {
+    pt: 'O₂ expirado',
+    en: 'Expired O₂'
+  },
+  scientificResults: {
+    pt: 'Métricas Científicas',
+    en: 'Scientific Metrics'
+  },
+  bmr: {
+    pt: 'Taxa Metabólica Basal (Kleiber)',
+    en: 'Basal Metabolic Rate (Kleiber)'
+  },
+  vo2: {
+    pt: 'Consumo de O₂ (VO₂)',
+    en: 'O₂ Consumption (VO₂)'
+  },
+  energyFromO2: {
+    pt: 'Energia por respirometria',
+    en: 'Energy by respirometry'
+  },
+  totalExpenditure: {
+    pt: 'Gasto energético total',
+    en: 'Total energy expenditure'
+  },
+  energyBalance: {
+    pt: 'Balanço energético',
+    en: 'Energy balance'
+  },
+  thermoCost: {
+    pt: 'Custo de termorregulação',
+    en: 'Thermoregulation cost'
+  },
+  stressBreakdown: {
+    pt: 'Composição do estresse',
+    en: 'Stress breakdown'
+  },
+  stTermico: { pt: 'Térmico', en: 'Thermal' },
+  stAgua: { pt: 'Água', en: 'Water' },
+  stEnergia: { pt: 'Energia', en: 'Energy' },
+  stPredador: { pt: 'Predador', en: 'Predator' }
 };
 
 interface LanguageContextType {

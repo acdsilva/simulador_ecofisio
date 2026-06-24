@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StatusBar,
   TextInput,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -43,6 +44,13 @@ export default function SimulatorScreen() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
 
+  // Modo científico (controles avançados)
+  const [scientificMode, setScientificMode] = useState(false);
+  const [foodKcal, setFoodKcal] = useState(2000);
+  const [predator, setPredator] = useState(false);
+  const [o2Inspired, setO2Inspired] = useState(20.9);
+  const [o2Expired, setO2Expired] = useState(16);
+
   useEffect(() => {
     loadSpecies();
   }, [id]);
@@ -71,7 +79,8 @@ export default function SimulatorScreen() {
         temperature,
         waterAvailability,
         foodAvailability,
-        language
+        language,
+        scientificMode ? { foodKcal, predator, o2Inspired, o2Expired } : undefined
       );
       setSimulationResult(result);
     } catch (error) {
@@ -177,7 +186,18 @@ export default function SimulatorScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('environmentalParameters')}</Text>
-          
+
+          <View style={styles.sciRow}>
+            <Ionicons name="flask" size={20} color={scientificMode ? '#9C27B0' : '#888'} />
+            <Text style={styles.sciLabel}>{t('scientificMode')}</Text>
+            <Switch
+              value={scientificMode}
+              onValueChange={setScientificMode}
+              trackColor={{ false: '#444', true: '#9C27B0' }}
+              thumbColor="#fff"
+            />
+          </View>
+
           <View style={styles.parameter}>
             <View style={styles.parameterHeader}>
               <Ionicons name="thermometer" size={24} color="#FF5722" />
@@ -243,6 +263,62 @@ export default function SimulatorScreen() {
               <Text style={styles.sliderLabel}>100%</Text>
             </View>
           </View>
+
+          {scientificMode && (
+            <>
+              <View style={styles.parameter}>
+                <View style={styles.parameterHeader}>
+                  <Ionicons name="nutrition" size={24} color="#FFC107" />
+                  <Text style={styles.parameterLabel}>{t('foodKcal')}</Text>
+                  <Text style={styles.parameterValue}>{foodKcal.toFixed(0)}</Text>
+                </View>
+                <Slider style={styles.slider} minimumValue={0} maximumValue={5000}
+                  value={foodKcal} onValueChange={setFoodKcal}
+                  minimumTrackTintColor="#FFC107" maximumTrackTintColor="#444" thumbTintColor="#FFC107" />
+                <View style={styles.sliderLabels}>
+                  <Text style={styles.sliderLabel}>0</Text>
+                  <Text style={styles.sliderLabel}>5000</Text>
+                </View>
+              </View>
+
+              <View style={styles.parameter}>
+                <View style={styles.parameterHeader}>
+                  <Ionicons name="cloud-outline" size={24} color="#03A9F4" />
+                  <Text style={styles.parameterLabel}>{t('o2Inspired')}</Text>
+                  <Text style={styles.parameterValue}>{o2Inspired.toFixed(1)}%</Text>
+                </View>
+                <Slider style={styles.slider} minimumValue={19} maximumValue={21}
+                  value={o2Inspired} onValueChange={setO2Inspired}
+                  minimumTrackTintColor="#03A9F4" maximumTrackTintColor="#444" thumbTintColor="#03A9F4" />
+                <View style={styles.sliderLabels}>
+                  <Text style={styles.sliderLabel}>19%</Text>
+                  <Text style={styles.sliderLabel}>21%</Text>
+                </View>
+              </View>
+
+              <View style={styles.parameter}>
+                <View style={styles.parameterHeader}>
+                  <Ionicons name="cloud" size={24} color="#607D8B" />
+                  <Text style={styles.parameterLabel}>{t('o2Expired')}</Text>
+                  <Text style={styles.parameterValue}>{o2Expired.toFixed(1)}%</Text>
+                </View>
+                <Slider style={styles.slider} minimumValue={12} maximumValue={21}
+                  value={o2Expired} onValueChange={setO2Expired}
+                  minimumTrackTintColor="#607D8B" maximumTrackTintColor="#444" thumbTintColor="#607D8B" />
+                <View style={styles.sliderLabels}>
+                  <Text style={styles.sliderLabel}>12%</Text>
+                  <Text style={styles.sliderLabel}>21%</Text>
+                </View>
+              </View>
+
+              <View style={styles.sciRow}>
+                <Ionicons name="warning" size={20} color={predator ? '#F44336' : '#888'} />
+                <Text style={styles.sciLabel}>{t('predatorPresent')}</Text>
+                <Switch value={predator} onValueChange={setPredator}
+                  trackColor={{ false: '#444', true: '#F44336' }} thumbColor="#fff" />
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
             style={styles.simulateButton}
@@ -321,6 +397,46 @@ export default function SimulatorScreen() {
                 </Text>
               </View>
             </View>
+
+            {scientificMode && simulationResult.basal_metabolic_rate_kcal != null && (
+              <View style={styles.sciPanel}>
+                <Text style={styles.sciPanelTitle}>{t('scientificResults')}</Text>
+
+                {[
+                  [t('bmr'), `${simulationResult.basal_metabolic_rate_kcal} kcal/dia`, undefined],
+                  [t('totalExpenditure'), `${simulationResult.total_expenditure_kcal} kcal/dia`, undefined],
+                  [
+                    t('energyBalance'),
+                    `${simulationResult.energy_balance_kcal >= 0 ? '+' : ''}${simulationResult.energy_balance_kcal} kcal`,
+                    simulationResult.energy_balance_kcal >= 0 ? '#4CAF50' : '#F44336',
+                  ],
+                  [t('vo2'), `${simulationResult.vo2_ml_g_h} mL/g/h`, undefined],
+                  [t('energyFromO2'), `${simulationResult.energy_from_o2_kcal} kcal/dia`, undefined],
+                  [t('thermoCost'), `${simulationResult.thermoregulation_cost_kcal} kcal/dia`, undefined],
+                ].map(([label, value, color], i) => (
+                  <View key={i} style={styles.sciMetric}>
+                    <Text style={styles.sciMetricLabel}>{label}</Text>
+                    <Text style={[styles.sciMetricValue, color ? { color: color as string } : null]}>{value}</Text>
+                  </View>
+                ))}
+
+                <Text style={styles.sciBreakTitle}>{t('stressBreakdown')}</Text>
+                {([['stTermico', 'termico'], ['stAgua', 'agua'], ['stEnergia', 'energia'], ['stPredador', 'predador']] as const).map(
+                  ([labelKey, key]) => {
+                    const pct = simulationResult.stress_breakdown?.[key] ?? 0;
+                    return (
+                      <View key={key} style={styles.breakRow}>
+                        <Text style={styles.breakLabel}>{t(labelKey)}</Text>
+                        <View style={styles.breakBarBg}>
+                          <View style={[styles.breakBarFill, { width: `${Math.min(pct, 100)}%` }]} />
+                        </View>
+                        <Text style={styles.breakPct}>{pct.toFixed(0)}%</Text>
+                      </View>
+                    );
+                  }
+                )}
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.explanationButton}
@@ -726,5 +842,89 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sciRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  sciLabel: {
+    flex: 1,
+    color: 'white',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  sciPanel: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#9C27B0',
+  },
+  sciPanelTitle: {
+    color: '#CE93D8',
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  sciMetric: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
+  },
+  sciMetricLabel: {
+    color: '#bbb',
+    fontSize: 13,
+    flex: 1,
+  },
+  sciMetricValue: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  sciBreakTitle: {
+    color: '#CE93D8',
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  breakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  breakLabel: {
+    color: '#bbb',
+    fontSize: 12,
+    width: 64,
+  },
+  breakBarBg: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 5,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+  },
+  breakBarFill: {
+    height: 10,
+    backgroundColor: '#9C27B0',
+    borderRadius: 5,
+  },
+  breakPct: {
+    color: '#bbb',
+    fontSize: 12,
+    width: 38,
+    textAlign: 'right',
   },
 });
